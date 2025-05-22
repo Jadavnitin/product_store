@@ -155,6 +155,10 @@ const Title = styled.h1`
    font-weight: 700;
    color: black;
    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+   
+   @media (max-width:450px) {
+      font-size: 1.5rem;
+   }
 `;
 
 const Back = styled.button`
