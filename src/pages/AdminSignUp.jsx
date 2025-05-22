@@ -81,6 +81,7 @@ const SignUpPage = () => {
          else if (admins.some(admin => admin.email === value)) newErrors.email = "Admin already exists!";
          else delete newErrors.email;
       }
+   
 
       if (name === 'password') {
          const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
@@ -285,3 +286,7 @@ const Error = styled.span`
   height: 16px;
   margin-top: 2px;
 `;
+
+
+
+

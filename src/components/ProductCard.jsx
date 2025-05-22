@@ -2,8 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
-import { FaCheck, FaRegHeart, FaShoppingCart } from "react-icons/fa";
-import { v4 as uuidv4 } from 'uuid';
+import { FaCheck, FaRegHeart, FaShoppingCart, FaTimesCircle } from "react-icons/fa";
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from "../reducers/cartSlice";
 import { addWishListCart } from '../reducers/wishListSlice';
@@ -18,57 +17,114 @@ import { searchFunctionality } from '../reducers/searchSlice';
 
 
 const ProductCard = () => {
-   const navigate = useNavigate();
    const dispatch = useDispatch();
+   const navigate = useNavigate();
+
+
    const [loading, setLoading] = useState(false);
+   const [selectedFilter, setSelectedFilter] = useState(null);
+   const [page, setPage] = useState(1);
+   const [totalProducts, setTotalProducts] = useState(0);
+   const limit = 4;
+   const skip = (page - 1) * limit;
 
 
-   const searchWord = useSelector((state) => state.search.searchWord || "");
+   
+   const adminAddedProducts = JSON.parse(localStorage.getItem("custom_products")) || [];
+   const adminDeletedProducts = JSON.parse(localStorage.getItem("deleted_products")) || [];
+   
    const wishListItems = useSelector((state) => state.wishList.wishListItems);
    const ascdingOrder = useSelector((state) => state.filterPrice.productAscOrder);
    const decendingOrder = useSelector((state) => state.filterPrice.productDscOrder);
    const defaultProducts = useSelector((state) => state.filterPrice.defaultProducts);
    const selectedCategory = useSelector((state) => state.category.selectedCategory);
    const categories = useSelector((state) => state.category.category);
+   const totalFilterApply = useSelector((state) => state.filterPrice.totalApplyFilter);
    const currentUser = useSelector((state) => state.profile.currentUser);
-   
+   const searchWord = useSelector((state) => state.search.searchWord || "");
+
    const email = currentUser?.email || "guest";
-   
-   let totalFilterApply = useSelector((state) => state.filterPrice.totalApplyFilter);
-  
-   const [selectedFilter, setSelectedFilter] = useState(null);
-   const [page, setPage] = useState(1);
 
-   const [totalProducts, setTotalProducts] = useState(0);
+   const mergeProducts = (adminList, fetchedList, deletedIds) => {
+      const mergedMap = new Map();
 
- 
-   
-   
-   const productData = selectedFilter === "lowToHigh" ? ascdingOrder
-      : selectedFilter === "highToLow" ? decendingOrder
-         : defaultProducts;
+      fetchedList.forEach((product) => {
+         if (!deletedIds.includes(product.id)) {
+            mergedMap.set(product.id, product);
+         }
+      });
+
+      adminList.forEach((adminProduct) => {
+         if (!deletedIds.includes(adminProduct.id)) {
+            mergedMap.set(adminProduct.id, adminProduct);
+         }
+      });
 
 
-   const hanlderCategorySelect = (category) => {
-      setLoading(true);
-      if (selectedCategory?.name === category?.name) {
-         dispatch(selectedFilterCategory(null));
-         dispatch(DefaultOrder(defaultProducts));
-      } else {
-         dispatch(selectedFilterCategory(category));
-      }
-      setTimeout(() => {
-         setLoading(false);
-      }, 1000);
-      setPage(1);
+      return Array.from(mergedMap.values());
    };
+   
 
 
+   const mergedProducts = mergeProducts(adminAddedProducts, defaultProducts, adminDeletedProducts);
+   
+   
+   
+
+   
+   
+   const filteredFetchedProducts = defaultProducts.filter(p => !adminDeletedProducts.includes(p.id));
+   const filteredAdminProducts = adminAddedProducts.filter(
+      (p) => !adminDeletedProducts.includes(p.id)
+   );
+
+
+   
+   const totalFetchedProducts = totalProducts - adminDeletedProducts.length + adminAddedProducts.length  ;
+   const calculatedTotalPages = Math.ceil(totalFetchedProducts / limit);
+   const isLastPage = page  === calculatedTotalPages ;
+
+   
+   
+   let sortedFetchedProducts = defaultProducts;
+   if (selectedFilter === "lowToHigh") {
+      sortedFetchedProducts = ascdingOrder;
+   } else if (selectedFilter === "highToLow") {
+      sortedFetchedProducts = decendingOrder;
+   }
+
+   sortedFetchedProducts = sortedFetchedProducts.filter(p => !adminDeletedProducts.includes(p.id));
+
+   const productData = isLastPage
+      ? [...sortedFetchedProducts, ...filteredAdminProducts]
+      : sortedFetchedProducts;
+
+      
+
+   
+
+   const normalizeText = (text) =>
+      text?.toLowerCase().replace(/[_\-\s]+/g, " ").trim() || "";
+
+  
+   const selected = normalizeText(selectedCategory?.name);
+
+
+   const filterProductData = productData.filter((product) => {
+         if (!selectedCategory) return true;
+
+         const productCategory = normalizeText(product?.category);
+         return productCategory === selected;
+      }).filter((product) => {
+         return product?.title?.toLowerCase().includes(searchWord.toLowerCase());
+      });
+
+   
+   const totalPages = Math.ceil(totalProducts / limit);
 
    const handlerCard = (id) => {
       navigate(`/productdetails/${id}`);
    };
-
 
    const handlerAddToCart = (product) => {
       dispatch(addToCart({ ...product, email }));
@@ -78,98 +134,8 @@ const ProductCard = () => {
       dispatch(addWishListCart({ ...product, email }));
    };
 
-   const isProductWishList = (id) => {
-      return wishListItems.find((item) => item.id === id && item.isWishListActive);
-   };
-
-
-
-   const filterProductData = productData.filter((product) => {
-
-      const matchesSearch = product?.title?.toLowerCase().includes(searchWord?.toLowerCase());
-
-      return matchesSearch;
-   });
-
-
-   const totalPages = Math.ceil(totalProducts / 4);
-
-   const limit = 4;
-   const skip = (page - 1) * limit;
-
-   useEffect(() => {
-      const fetchProducts = async () => {
-         setLoading(true);
-         try {
-            let url = "";
-            const categoryName = selectedCategory?.name;
-
-            if (categoryName) {
-               const categorySlug = categoryName.toLowerCase().replace(/\s/g, "-");
-               url = `https://dummyjson.com/products/category/${categorySlug}?limit=${limit}&skip=${skip}`;
-            } else {
-               url = `https://dummyjson.com/products?limit=${limit}&skip=${skip}`;
-            }
-
-            const res = await axios.get(url);
-            let products = res.data.products;
-
-            if (selectedFilter === "lowToHigh") {
-               handlerFilterPriceLowToHigh();
-            } else if (selectedFilter === "highToLow") {
-               handlerFilterPriceHighToLow();
-            }
-
-
-            dispatch(DefaultOrder(products));
-            setTotalProducts(res.data.total);
-         } catch (error) {
-            console.error("Error fetching products:", error);
-         }
-         setLoading(false);
-      };
-
-      fetchProducts();
-
-
-      axios
-         .get("https://dummyjson.com/products/categories")
-         .then((res) => dispatch(filterCategory(res.data)))
-         .catch((error) => console.error("Error fetching categories:", error));
-   }, [dispatch, page, selectedFilter, selectedCategory]);
-
-
-
-
-   const handlerFilterPriceLowToHigh = () => {
-      setLoading(true);
-      axios
-         .get(`https://dummyjson.com/products?limit=${limit}&skip=${skip}&sortBy=price&order=asc`)
-         .then((res) => {
-            dispatch(AscendingOrder(res.data.products));
-            setLoading(false);
-         })
-         .catch((error) => {
-            console.error("Error fetching sorted data:", error);
-            setLoading(false);
-         });
-   };
-
-   const handlerFilterPriceHighToLow = () => {
-      setLoading(true);
-      axios
-         .get(`https://dummyjson.com/products?limit=${limit}&skip=${skip}&sortBy=price&order=desc`)
-         .then((res) => {
-            dispatch(DecendingOrder(res.data.products));
-            setLoading(false);
-         })
-         .catch((error) => {
-            console.error("Error fetching sorted data:", error);
-            setLoading(false);
-         });
-   };
-
-
+   const isProductWishList = (id) =>
+      wishListItems.find((item) => item.id === id && item.isWishListActive);
 
    const toggleFilter = (filter) => {
       if (selectedFilter === filter) {
@@ -182,154 +148,240 @@ const ProductCard = () => {
 
    const hanlderSearch = (e) => {
       dispatch(searchFunctionality(e.target.value));
-   }
+   };
+
+   const hanlderCategorySelect = (category) => {
+      setLoading(true);
+      if (selectedCategory?.name === category?.name) {
+         dispatch(selectedFilterCategory(null));
+         dispatch(DefaultOrder(defaultProducts));
+      } else {
+         dispatch(selectedFilterCategory(category));
+      }
+      setTimeout(() => setLoading(false), 1000);
+      setPage(1);
+   };
+
    
+
+   const handlerFilterPriceLowToHigh = async () => {
+      setLoading(true);
+      try {
+         const slug = selectedCategory?.name
+            ? selectedCategory.name.toLowerCase().replace(/\s/g, "-")
+            : null;
+         const baseUrl = slug
+            ? `https://dummyjson.com/products/category/${slug}`
+            : `https://dummyjson.com/products`;
+
+         const res = await axios.get(
+            `${baseUrl}?limit=${limit}&skip=${skip}&sortBy=price&order=asc`
+         );
+         dispatch(AscendingOrder(res.data.products));
+         setTotalProducts(res.data.total);
+      } catch (error) {
+         console.error("Error fetching sorted data (asc):", error);
+      } finally {
+         setLoading(false);
+      }
+   };
+
+   const handlerFilterPriceHighToLow = async () => {
+      setLoading(true);
+      try {
+         const slug = selectedCategory?.name
+            ? selectedCategory.name.toLowerCase().replace(/\s/g, "-")
+            : null;
+         const baseUrl = slug
+            ? `https://dummyjson.com/products/category/${slug}`
+            : `https://dummyjson.com/products`;
+
+         const res = await axios.get(
+            `${baseUrl}?limit=${limit}&skip=${skip}&sortBy=price&order=desc`
+         );
+         dispatch(DecendingOrder(res.data.products));
+         setTotalProducts(res.data.total);
+      } catch (error) {
+         console.error("Error fetching sorted data (desc):", error);
+      } finally {
+         setLoading(false);
+      }
+   };
+   useEffect(() => {
+      const fetchAndSort = async () => {
+         setLoading(true);
+         try {
+
+            const slug = selectedCategory?.name
+               ? selectedCategory.name.toLowerCase().replace(/\s/g, "-")
+               : null;
+            const baseUrl = slug
+               ? `https://dummyjson.com/products/category/${slug}`
+               : `https://dummyjson.com/products`;
+
+            const res = await axios.get(
+               `${baseUrl}?limit=${limit}&skip=${skip}`
+            );
+            dispatch(DefaultOrder(res.data.products));
+            setTotalProducts(res.data.total);
+
+
+            if (selectedFilter === "lowToHigh") {
+               const sortRes = await axios.get(
+                  `${baseUrl}?limit=${limit}&skip=${skip}&sortBy=price&order=asc`
+               );
+               dispatch(AscendingOrder(sortRes.data.products));
+               setTotalProducts(sortRes.data.total);
+            } else if (selectedFilter === "highToLow") {
+               const sortRes = await axios.get(
+                  `${baseUrl}?limit=${limit}&skip=${skip}&sortBy=price&order=desc`
+               );
+               dispatch(DecendingOrder(sortRes.data.products));
+               setTotalProducts(sortRes.data.total);
+            }
+         } catch (error) {
+            console.error("Error fetching/sorting products:", error);
+         } finally {
+            setLoading(false);
+         }
+      };
+
+      fetchAndSort();
+
+      axios
+         .get("https://dummyjson.com/products/categories")
+         .then((res) => dispatch(filterCategory(res.data)))
+         .catch((err) => console.error("Error fetching categories:", err));
+   }, [dispatch, page, selectedFilter, selectedCategory, limit, skip]);
+   
+   
+
    return (
-
-
-
       <MainCardContaier>
-       <SidebarContainer>
+         <SidebarContainer>
             <SearchContainer>
-             <div className="group" >
-                        <svg viewBox="0 0 24 24" aria-hidden="true" className="search-icon">
-                          <g>
-                            <path
-                              d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 4.03-9 9 4.03 9 9 9c2.215 0 4.24-.804 5.808-2.13l3.66 3.66c.147.146.34.22.53.22s.385-.073.53-.22c.295-.293.295-.767.002-1.06zM3.5 11c0-4.135 3.365-7.5 7.5-7.5s7.5 3.365 7.5 7.5-3.365 7.5-7.5 7.5-7.5-3.365-7.5-7.5z"
-                            ></path>
-                          </g>
-                        </svg>
-            
-                        <input
-                          id="query"
-                          className="input"
-                          type="search"
-                          placeholder="Search..."
-                         name="searchbar"
-                        onChange={hanlderSearch}
-                        />
-            </div>
+               <div className="group">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" className="search-icon">
+                     <g>
+                        <path
+                           d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 4.03-9 9 4.03 9 9 9c2.215 0 4.24-.804 5.808-2.13l3.66 3.66c.147.146.34.22.53.22s.385-.073.53-.22c.295-.293.295-.767.002-1.06zM3.5 11c0-4.135 3.365-7.5 7.5-7.5s7.5 3.365 7.5 7.5-3.365 7.5-7.5 7.5-7.5-3.365-7.5-7.5z"
+                        ></path>
+                     </g>
+                  </svg>
+
+                  <input
+                     className="input"
+                     type="search"
+                     placeholder="Search..."
+                     onChange={hanlderSearch}
+                  />
+               </div>
             </SearchContainer>
-            
+
             <CategoryAndFilter>
-            <IconButton aria-label="">
-               <StyledBadge badgeContent={totalFilterApply} color="secondary">
-                  <FilterContainer>
-                     <FilterTitle>
-                        Filter by <FaChevronDown className='icons' />
-                     </FilterTitle>
-                     <FilterDropdown>
-                        <FilterDropdownItem
-                           onClick={() => toggleFilter("lowToHigh")}
-                           style={{ background: selectedFilter === "lowToHigh" ? "#ddd" : "transparent", color: selectedFilter === "lowToHigh" ? "black" : "#ddd" }}
-                        >
-                           {selectedFilter === "lowToHigh" && <FaCheck />} Price: Low to High
-                        </FilterDropdownItem>
+               <IconButton>
+                  <StyledBadge badgeContent={totalFilterApply} color="secondary">
+                     <FilterContainer>
+                        <FilterTitle>
+                           Filter by <FaChevronDown className='icons' />
+                        </FilterTitle>
+                        <FilterDropdown>
+                           <FilterDropdownItem
+                              onClick={() => toggleFilter("lowToHigh")}
+                              style={{ background: selectedFilter === "lowToHigh" ? "#ddd" : "transparent" }}
+                           >
+                              {selectedFilter === "lowToHigh" && <FaCheck />} Price: Low to High
+                           </FilterDropdownItem>
 
-                        <FilterDropdownItem
-                           onClick={() => toggleFilter("highToLow")}
-                           style={{ background: selectedFilter === "highToLow" ? "#ddd" : "transparent", color: selectedFilter === "highToLow" ? "black" : "#ddd" }}
-                        >
-                           {selectedFilter === "highToLow" && <FaCheck />} Price: High to Low
-                        </FilterDropdownItem>
-                     </FilterDropdown>
-                  </FilterContainer>
-               </StyledBadge>
-            </IconButton>
+                           <FilterDropdownItem
+                              onClick={() => toggleFilter("highToLow")}
+                              style={{ background: selectedFilter === "highToLow" ? "#ddd" : "transparent" }}
+                           >
+                              {selectedFilter === "highToLow" && <FaCheck />} Price: High to Low
+                           </FilterDropdownItem>
+                        </FilterDropdown>
+                     </FilterContainer>
+                  </StyledBadge>
+               </IconButton>
 
-
-
-            <CategoryContainer>
-
-               <CategoryTitle>
-                  {selectedCategory?.name || "Category"} <FaChevronDown className='icons' />
-               </CategoryTitle>
-
-
-               <CategoryDropdown>
-
-                  <CategoryDropdownItem onClick={() => hanlderCategorySelect(null)}>
-                     Clear Category
-                  </CategoryDropdownItem>
-
-                  {categories?.map((categorieItem, index) => (
-                     <CategoryDropdownItem
-                        key={index}
-                        onClick={() => hanlderCategorySelect(categorieItem)}
-                        style={{
-                           background: selectedCategory?.name === categorieItem.name ? "#ddd" : "transparent",
-                           color: selectedCategory?.name === categorieItem.name ? "black" : "#ddd",
-                        }}
-                     >
-                        {categorieItem.name}
-                     </CategoryDropdownItem>
-                  ))}
-               </CategoryDropdown>
+               <CategoryContainer>
+                  <CategoryTitle>
+                     {selectedCategory?.name || "Category"}
+                     <CategoryIconContainer>
+                     <FaChevronDown className="icons" />
+                     {selectedCategory && (
+                        <FaTimesCircle
+                           className="clear-icon"
+                           title="Clear Category"
+                           onClick={() => hanlderCategorySelect(null)}
+                           style={{ marginLeft: "8px", cursor: "pointer", color: "white" }}
+                        />
+                        )}
+                     </CategoryIconContainer>
+                  </CategoryTitle>
+                  
+                  <CategoryDropdown>
+                     {categories?.map((cat, index) => (
+                        <CategoryDropdownItem
+                           key={index}
+                           onClick={() => hanlderCategorySelect(cat)}
+                           style={{
+                              background: selectedCategory?.name === cat.name ? "#ddd" : "transparent"
+                           }}>
+                           {cat.name}
+                        </CategoryDropdownItem>
+                     ))}
+                  </CategoryDropdown>
                </CategoryContainer>
             </CategoryAndFilter>
-            
          </SidebarContainer>
 
          <CardContainer>
             {loading ? (
-               <LoaderContainer>
-                  <Loader />
-               </LoaderContainer>
-
+               <LoaderContainer><Loader /></LoaderContainer>
             ) : filterProductData.length === 0 ? (
                <h1>No Products Found</h1>
             ) : (
                filterProductData.map((product) => {
-
                   const isWishListActive = isProductWishList(product.id);
-
-
                   return (
                      <Card key={product.id}>
                         <div className="image-container" onClick={() => handlerCard(product.id)}>
-                           <img src={product.thumbnail} alt={product.title} />
+                           <img src={(Array.isArray(product?.images) && product.images[0]) || product.image} alt={product.title} />
                         </div>
-
                         <div className="content">
                            <h2>{product.title}</h2>
-
                            <div className='ratings-container'>
                               <RatingContainer>
-                                 {[5, 4, 3, 2, 1].map((value) => {
-                                    const uniqueId = uuidv4();
-                                    return (
-                                       <div key={value}>
-                                          <RatingInput
-                                             type="radio"
-                                             id={`star-${value}-${product.id}-${uniqueId}`}
-                                             name={`rating-${product.id}`}
-                                             value={value}
-                                          />
-                                          <RatingLabel htmlFor={`star-${value}-${product.id}-${uniqueId}`} />
-                                       </div>
-                                    );
-                                 })}
+                                 <RatingBackground>
+                                    {[...Array(5)].map((_, index) => (
+                                       <Star key={index}>★</Star>
+                                    ))}
+                                 </RatingBackground>
+                                 <RatingFill width={(product.rating / 5) * 100 + '%'}>
+                                    {[...Array(5)].map((_, index) => (
+                                       <Star key={index}>★</Star>
+                                    ))}
+                                 </RatingFill>
                               </RatingContainer>
-                           </div>
 
+                           </div>
                            <div className="info">
                               <span><b>${product.price}</b></span>
                               <span>{product.brand}</span>
                            </div>
-
                            <div className="actions">
-                              <button type="button" className="addtocart" onClick={() => handlerAddToCart(product)}>
-                                 <FaShoppingCart />Add to Cart
+                              <button className="addtocart" onClick={() => handlerAddToCart(product)}>
+                                 <FaShoppingCart/> Add to Cart
                               </button>
-
                               <HeartButton
-                                 $isWishListActive={isWishListActive}  // Apply click effect
-                                 onClick={() => handlerWishListToCart(product)}>
+                                 $isWishListActive={isWishListActive}
+                                 onClick={() => handlerWishListToCart(product)}
+                              >
                                  <FaRegHeart />
                               </HeartButton>
                            </div>
                         </div>
-
                         <NavLink to={`/productdetails/${product.id}`} />
                      </Card>
                   );
@@ -342,14 +394,17 @@ const ProductCard = () => {
             totalPages={totalPages}
             onPageChange={(p) => setPage(p)}
          />
-
       </MainCardContaier>
    );
 };
 
 export default ProductCard;
 
-
+const CategoryIconContainer = styled.div`
+display: flex;
+gap:0.12rem;
+`
+;
 const CategoryAndFilter = styled.div`
 display: flex;
 justify-content:center;
@@ -431,10 +486,12 @@ const SearchContainer = styled.div`
 
 
 const LoaderContainer = styled.div`
-  display: flex;
+   display: flex;
   justify-content: center;
   align-items: center;
-  height:50vh;
+  height:50vh; 
+  width: 100vw;   
+ 
 `;
 
 
@@ -708,8 +765,9 @@ const Card = styled.div`
    }
 
    .image-container {
-      height: 55%;
-      width: 100%;
+      margin: auto;
+      height:40%;
+      width:80%;
       overflow: hidden;
 
       img {
@@ -803,27 +861,28 @@ const HeartButton = styled.button`
    }
 `;
 
-
 const RatingContainer = styled.div`
-  display: inline-flex;
-`;
-
-const RatingInput = styled.input`
-  display: none;
-`;
-
-const RatingLabel = styled.label`
-  cursor: pointer;
+  position: relative;
+  display: inline-block;
   font-size: 30px;
+  line-height: 1;
+`;
+
+const RatingBackground = styled.div`
   color: #ccc;
+`;
 
-  &:before {
-    content: "★";
-  }
+const RatingFill = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  width: ${({ width }) => width};
+  white-space: nowrap;
+  color: #ffc300;
+  pointer-events: none;
+`;
 
-  &:hover,
-  &:hover ~ label,
-  input:checked ~ label {
-    color: #ffc300;
-  }
+const Star = styled.span`
+  display: inline-block;
 `;

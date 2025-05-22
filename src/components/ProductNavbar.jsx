@@ -9,8 +9,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { decrementCartItems, incrementCartItems } from '../reducers/cartSlice';
 
 import { useNavigate } from 'react-router-dom';
-import { toast, ToastContainer } from 'react-toastify';
+import {  ToastContainer } from 'react-toastify';
 import { logout } from '../reducers/profileSlice';
+import { useLocation } from 'react-router-dom';
+import { adminLogout } from '../reducers/adminSlice';
+
+
 
 
 
@@ -18,6 +22,10 @@ import { logout } from '../reducers/profileSlice';
 const ProductNavbar = () => {
 
 
+  const location = useLocation();
+  const isAdminPage = location.pathname.includes("/admin");
+
+  
   const cartCount = useSelector((state) => state.cart.totalCount);
   const cartItems = useSelector((state) => state.cart.cartItems);
   const totalPrice = useSelector((state) => state.cart.totalPrice);
@@ -78,9 +86,38 @@ const ProductNavbar = () => {
   }
   
   const handleLogout = () => {
-    dispatch(logout())
-    navigate("/signin");
+   
+    if (isAdminPage) {
+      dispatch(adminLogout())
+      navigate("/adminsignin");
+    } else {
+      dispatch(logout());
+      navigate("/signin");
+    }
+  };
+
+  const handlerUser = () => {
+    navigate("/");
   }
+  
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      const isProfileBtn = e.target.closest(".profile-toggle");
+      const isProfileDropdown = e.target.closest(".profile-dropdown");
+
+      if (!isProfileBtn && !isProfileDropdown) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+
+  
   return (
     <>
 
@@ -102,17 +139,24 @@ const ProductNavbar = () => {
 
         
           <SmallIconContainer>
-            <IconButton aria-label="wishlist">
-              <StyledBadge badgeContent={totalWishListCount} color="secondary" onClick={hanlderWishList}>
-                <FaHeart />
-              </StyledBadge>
-            </IconButton>
+            
+            {!isAdminPage && (
+              <>
+                <IconButton aria-label="wishlist">
+                  <StyledBadge badgeContent={totalWishListCount} color="secondary" onClick={hanlderWishList}>
+                    <FaHeart />
+                  </StyledBadge>
+                </IconButton>
 
-            <IconButton aria-label="cart">
-              <StyledBadge badgeContent={cartCount} color="secondary">
-                <FaShoppingCart onClick={toggleCartDropdown} />
-              </StyledBadge>
-            </IconButton>
+              
+                <IconButton aria-label="cart">
+                  <StyledBadge badgeContent={cartCount} color="secondary">
+                    <FaShoppingCart onClick={toggleCartDropdown} />
+                  </StyledBadge>
+                </IconButton>
+              </>
+            )}
+
 
             <ProfileContainer onClick={hanlderMyProfile}>
               <img src={currentUser?.profileImage || "/src/assets/logo.png"} alt="profile-img" />
@@ -123,18 +167,22 @@ const ProductNavbar = () => {
         </DropdownMenu>
         <IconContainer>
           
-          <IconButton aria-label="wishlist">
-            <StyledBadge badgeContent={totalWishListCount} color="secondary" onClick={hanlderWishList}>
-              <FaHeart />
-            </StyledBadge>
-          </IconButton>
+          {!isAdminPage && (
+            <>
+              <IconButton aria-label="wishlist">
+                <StyledBadge badgeContent={totalWishListCount} color="secondary" onClick={hanlderWishList}>
+                  <FaHeart />
+                </StyledBadge>
+              </IconButton>
 
-          <IconButton aria-label="cart">
-            <StyledBadge badgeContent={cartCount} color="secondary">
-              <FaShoppingCart onClick={toggleCartDropdown} />
-            </StyledBadge>
-          </IconButton>
 
+              <IconButton aria-label="cart">
+                <StyledBadge badgeContent={cartCount} color="secondary">
+                  <FaShoppingCart onClick={toggleCartDropdown} />
+                </StyledBadge>
+              </IconButton>
+            </>
+          )}
 
           <ProfileContainer onClick={handlerProfile}>
             <img src={currentUser?.profileImage || "/src/assets/logo.png"} alt="profile-img" />
@@ -143,9 +191,13 @@ const ProductNavbar = () => {
         </IconContainer>
 
 
-        <ProfileDropdownMenu $isprofileopen={isProfileOpen}>
+        <ProfileDropdownMenu $isprofileopen={isProfileOpen} className="profile-dropdown">
           <ProfileDropdownItem onClick={hanlderMyProfile}>My Profile</ProfileDropdownItem>
-          <ProfileDropdownItem onClick={handlerAdmin}>Admin</ProfileDropdownItem>
+          
+          <ProfileDropdownItem onClick={isAdminPage ? handlerUser : handlerAdmin}>
+            {isAdminPage ? "User" : "Admin"}
+          </ProfileDropdownItem>
+
           <ProfileDropdownItem onClick={handleLogout}>Logout</ProfileDropdownItem>
         </ProfileDropdownMenu>
 
@@ -158,7 +210,7 @@ const ProductNavbar = () => {
           {cartItems.length > 0 ? (<CartItems>
             {cartItems.map((cartItem) => (
               <CartItem key={cartItem.id}>
-                <ItemImage src={cartItem.thumbnail} alt={cartItem.title} />
+                <ItemImage src={(Array.isArray(cartItem?.images) && cartItem.images[0]) || cartItem.image} alt={cartItem.title} />
                 <ItemDetails>
                   <h4>{cartItem.title}</h4>
                   <p>${cartItem.price}</p>
@@ -302,7 +354,7 @@ const LogoAndSearchContainer = styled.div`
   gap: 1rem;
 
   img {
-    width: 80px;
+    width:65px;
     height: auto;
     transition: all 0.3s ease;
     

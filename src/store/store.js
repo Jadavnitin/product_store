@@ -6,6 +6,9 @@ import categoryReducer from "../reducers/categorySlice"
 import filterPriceReducer from "../reducers/filterSlice"
 import profileReducer from "../reducers/profileSlice"
 import adminReducer from "../reducers/adminSlice"
+import productReducer from "../reducers/productSlice"
+import uiReducer from "../reducers/productsSlice"
+
 
 export const store = configureStore({
    reducer: { 
@@ -16,5 +19,9 @@ export const store = configureStore({
       filterPrice: filterPriceReducer,
       profile: profileReducer,
       admin: adminReducer,
+      product: productReducer,
+      ui:uiReducer
    }
+ 
 });
+

@@ -27,7 +27,7 @@ const profileSlice = createSlice({
          if (state.users.some(user => user.email === email)) {
             return;
          }
-
+       
          const newUser = { email, password, firstName, lastName, address, profileImage };
          state.users.push(newUser);
 

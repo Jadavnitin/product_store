@@ -57,12 +57,15 @@ const SignUpPage = () => {
     }
 
     if (!passwordRegex.test(userData.password)) {
-      newErrors.password = "Min. 6 chars, include letters & numbers.";
+       newErrors.password = "Min. 6 chars, include letters & numbers.";
     }
-
-    if (userData.password !== userData.confirmPassword) {
-      toast.error("Passwords do not match!");
-    }
+    
+     if (!userData.confirmPassword) {
+         newErrors.confirmPassword = "Confirm password is required.";
+     }
+     else if (userData.password !== userData.confirmPassword) {
+         toast.error("Passwords do not match");
+      }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -70,6 +73,7 @@ const SignUpPage = () => {
 
   const handlerSubmit = (e) => {
     e.preventDefault();
+    
     if (!validateForm()) return;
 
     dispatch(signUp({

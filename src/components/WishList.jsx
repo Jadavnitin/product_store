@@ -1,5 +1,5 @@
 import React from 'react'
-import { FaCartPlus, FaTrashAlt } from 'react-icons/fa';
+import { FaArrowLeft, FaCartPlus, FaTrashAlt } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 import { removeWishListItem } from '../reducers/wishListSlice';
@@ -9,19 +9,22 @@ import ProductNavbar from './ProductNavbar';
 import { ToastContainer } from 'react-toastify';
 
 import Swal from 'sweetalert2';
+import { useNavigate } from 'react-router-dom';
 
 
 const WishList = () => {
-   
-   
-  const dispatch = useDispatch();
-  
-  
-   const wishListItems = useSelector((state) => state.wishList.wishListItems);
-   
-  const hanlderRemoveWishList = (id) => {
-    // toast.success(`Product is removing from wishlist cart`);
 
+
+  const navigate = useNavigate();
+  
+  
+  const dispatch = useDispatch();
+
+
+  const wishListItems = useSelector((state) => state.wishList.wishListItems);
+
+  const hanlderRemoveWishList = (id) => {
+   
     Swal.fire({
       title: "Are you sure?",
       text: "You won't be able to revert this!",
@@ -41,18 +44,18 @@ const WishList = () => {
       }
     });
 
-    
-  }
-  
-  
-  
-  const handlerAddToCart = (wishListItem) => {  
-    dispatch(addToCart(wishListItem));
-    
-  };
-  
 
-   
+  }
+
+
+
+  const handlerAddToCart = (wishListItem) => {
+    dispatch(addToCart(wishListItem));
+
+  };
+
+
+
   return (
     <>
       <ToastContainer
@@ -67,40 +70,85 @@ const WishList = () => {
         pauseOnHover
         theme="light"
       />
-      <ProductNavbar/>
-     <WishlistContainer>
+      <ProductNavbar />
+      <WishlistContainer>
         <Header>
+          <Back onClick={() => navigate("/")}>
+            <FaArrowLeft size={18} />
+            BACK
+          </Back>
           <div>PRODUCT</div>
-           <div>PRICE</div>
-           <div>ACTION</div>
-        </Header> 
-        
-        {wishListItems.length > 0?(
-           wishListItems.map(wishListitem => (
-              <WishlistItem key={wishListitem.id}>
-                 <ItemInfo>
-                    <img src={wishListitem.thumbnail} alt={wishListitem.title} />
-                    <ItemDetails>
-                       <h4>{wishListitem.title}</h4>
-                       <p>Price: {wishListitem.price}</p>
-                    </ItemDetails>
-                 </ItemInfo>
-                 <Price>{wishListitem.price}</Price>
-                 <Actions>
-                 <button onClick={() => handlerAddToCart(wishListitem)}><FaCartPlus  /> Add to Cart</button>
-                    <button onClick={()=>hanlderRemoveWishList(wishListitem.id)}><FaTrashAlt /> Remove</button>
-                 </Actions>
-              </WishlistItem>
-           ))
+          <div>PRICE</div>
+          <div>ACTION</div>
+        </Header>
+
+        {wishListItems.length > 0 ? (
+          wishListItems.map(wishListitem => (
+            <WishlistItem key={wishListitem.id}>
+              <ItemInfo>
+                <img src={wishListitem.thumbnail || wishListitem.image} alt={wishListitem.title} />
+                <ItemDetails>
+                  <h4>{wishListitem.title}</h4>
+                  <p>Price: {wishListitem.price}</p>
+                </ItemDetails>
+              </ItemInfo>
+              <Price>{wishListitem.price}</Price>
+              <Actions>
+                <button onClick={() => handlerAddToCart(wishListitem)}><FaCartPlus /> Add to Cart</button>
+                <button onClick={() => hanlderRemoveWishList(wishListitem.id)}><FaTrashAlt /> Remove</button>
+              </Actions>
+            </WishlistItem>
+          ))
         ) : (<EmptyWishListCartItemsContainer><EmptyWishListCartItems>Your WishList cart is empty!</EmptyWishListCartItems></EmptyWishListCartItemsContainer>)}
-        
-       
+
+
       </WishlistContainer>
     </>
   )
 }
 
 export default WishList
+
+const Header = styled.div`
+  display: grid;
+  grid-template-columns: auto 1fr 1fr 1fr;
+  align-items: center;
+  background: #282828;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: bold;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  gap: 1rem;
+
+  > div {
+    text-align: center;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+    padding: 0.75rem;
+    display: none;
+  }
+`;
+
+const Back = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: white;
+  border: none;
+  cursor: pointer;
+   font-size: 1.1rem;
+  font-weight: bold;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
 
 const EmptyWishListCartItems = styled.h1`
 font-size:1.25rem;
@@ -126,29 +174,7 @@ const WishlistContainer = styled.div`
 
 `;
 
-const Header = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  align-items: center;
-  background: #282828;
-  color: #fff;
-  font-size: 1.1rem;
-  font-weight: bold;
-  padding: 1rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  
-  div{
-   text-align: center;
-  }
-  
 
-  @media (max-width: 480px) {
-    font-size: 0.9rem;
-    padding: 0.75rem;
-    display: none;
-  }
-`;
 
 const WishlistItem = styled.div`
   display: grid;

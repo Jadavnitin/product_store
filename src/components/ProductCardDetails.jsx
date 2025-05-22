@@ -1,7 +1,7 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import styled, { css, keyframes } from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { FaArrowLeft, FaShoppingCart } from 'react-icons/fa';
 import { addToCart } from '../reducers/cartSlice';
 import { useDispatch } from 'react-redux';
@@ -12,24 +12,39 @@ const ProductCardDetails = () => {
   const [singleProductData, setSingleProductData] = useState({});
   const [mainImage, setMainImage] = useState(null);
   const [loading, setLoading] = useState(true); 
-
+  
+  
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+
   useEffect(() => {
-    setLoading(true); 
-    axios.get(`https://dummyjson.com/products/${id}`)
-      .then((res) => {
-        setSingleProductData(res.data);
-        setMainImage(res.data.thumbnail || null);
-        setLoading(false); 
-      })
-      .catch((err) => {
-        console.error(err);
-        setLoading(false); 
-        
-      });
+    const customProducts = JSON.parse(localStorage.getItem("custom_products")) || [];
+    const localProduct = customProducts.find(p => String(p.id) === id);
+
+    if (localProduct) {
+      setSingleProductData(localProduct);
+      setMainImage(localProduct.image || null);
+      setLoading(false);
+    } else {
+      setLoading(true);
+      axios.get(`https://dummyjson.com/products/${id}`)
+        .then((res) => {
+          setSingleProductData(res.data);
+          setMainImage(res.data.images?.[0] || null);
+        })
+        .catch((err) => {
+          console.error("Error fetching product:", err);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
   }, [id]);
+  
+  
+  
+
 
   const handlerAddToCart = (singleProduct) => {
     dispatch(addToCart(singleProduct));
