@@ -158,7 +158,7 @@ const ProductNavbar = () => {
             )}
 
 
-            <ProfileContainer onClick={hanlderMyProfile}>
+            <ProfileContainer onClick={handlerProfile}>
               <img src={currentUser?.profileImage || "/src/assets/logo.png"} alt="profile-img" />
             </ProfileContainer>
 
@@ -280,6 +280,10 @@ const ProfileDropdownMenu = styled.div`
   transition: all 0.4s ease-in-out;
   z-index: 999;
 
+
+@media (max-width:450px){
+  top:268px;
+}
 `;
 
 
