@@ -321,6 +321,12 @@ const Wrapper = styled.div`
     color: #0066ff;
     cursor: pointer;
   }
+  
+  @media (max-width:768px) {
+    .fullName {
+    flex-direction: column;
+  }
+  }
 `;
 
 const Error = styled.span`
