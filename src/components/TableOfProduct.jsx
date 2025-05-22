@@ -347,8 +347,10 @@ const Loader = styled.div`
 
 
 const Container = styled.div`
-  padding: 20px;
-  background: white;
+padding: 20px;
+background: white;
+overflow-y: scroll;
+max-height:450px;
 `;
 
 
