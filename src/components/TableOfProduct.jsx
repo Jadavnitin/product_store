@@ -329,6 +329,8 @@ const TableWrapper = styled.div`
   .table-div{
     max-height:350px;
     overflow-y: scroll;
+    width: 100%;
+    overflow-x: auto;
   }
 
 `;
