@@ -165,7 +165,7 @@ const TableOfProduct = ({ externalData = [] }) => {
   return (
     <Container>
       <TableWrapper>
-      
+        <div className='table-div'>
         <StyledTable>
           <thead>
             <tr>
@@ -227,7 +227,7 @@ const TableOfProduct = ({ externalData = [] }) => {
             )}
           </tbody>
         </StyledTable>
-        
+        </div>
         <Footer>
           <PaginationContainer>{renderPagination()}</PaginationContainer>
           <PageSizeWrapper>
