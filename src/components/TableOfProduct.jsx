@@ -165,6 +165,7 @@ const TableOfProduct = ({ externalData = [] }) => {
   return (
     <Container>
       <TableWrapper>
+        <div className='table-div'>
         <StyledTable>
           <thead>
             <tr>
@@ -226,7 +227,7 @@ const TableOfProduct = ({ externalData = [] }) => {
             )}
           </tbody>
         </StyledTable>
-
+        </div>
         <Footer>
           <PaginationContainer>{renderPagination()}</PaginationContainer>
           <PageSizeWrapper>
@@ -324,6 +325,11 @@ const TableWrapper = styled.div`
     padding-bottom: 4px; 
   }
 
+  
+  .table-div{
+    max-height:350px;
+    overflow-y: scroll;
+  }
 
 `;
 
@@ -349,8 +355,7 @@ const Loader = styled.div`
 const Container = styled.div`
 padding: 20px;
 background: white;
-overflow-y: scroll;
-max-height:450px;
+
 `;
 
 
@@ -358,6 +363,7 @@ const StyledTable = styled.table`
   width: 100%;
   border-collapse: collapse;
 
+  
   @media (max-width: 633px) {
     min-width: 633px; 
   }
