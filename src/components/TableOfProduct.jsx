@@ -301,7 +301,8 @@ const TableWrapper = styled.div`
   width: 100%;
   overflow-x: auto;
   border-radius: 8px;
-
+  max-height:450px;
+  overflow-y: scroll;
 
   &::-webkit-scrollbar {
     height: 8px;
@@ -323,14 +324,6 @@ const TableWrapper = styled.div`
 
   @media (max-width: 633px) {
     padding-bottom: 4px; 
-  }
-
-  
-  .table-div{
-    max-height:350px;
-    overflow-y: scroll;
-    width: 100%;
-    overflow-x: auto;
   }
 
 `;
