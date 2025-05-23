@@ -326,10 +326,10 @@ const TableWrapper = styled.div`
   }
 
   
-  /* .table-div{
+  .table-div{
     max-height:350px;
     overflow-y: scroll;
-  } */
+  }
 
 `;
 
