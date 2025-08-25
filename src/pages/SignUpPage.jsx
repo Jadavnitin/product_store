@@ -17,6 +17,8 @@ const SignUpPage = () => {
     password: "",
     confirmPassword: "",
   });
+  
+
 
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
@@ -34,7 +36,7 @@ const SignUpPage = () => {
     const newErrors = {};
     const nameRegex = /^[A-Za-z]+$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
+     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{6,}$/;
 
     if (!nameRegex.test(userData.firstName)) {
       newErrors.firstName = "First name must contain only letters.";
@@ -84,6 +86,7 @@ const SignUpPage = () => {
       address: userData.address,
       profileImage: userData.image
     }));
+    console.log("userData",userData);
 
     toast.success("Sign Up Successfully..");
 
